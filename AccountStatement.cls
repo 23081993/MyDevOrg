@@ -4,8 +4,9 @@
  * @modified: 30 April, 2014 by Geeta Kushwaha, geeta.kushwaha@ipc.ph
               10 July, 14 by Geeta Kushwaha, geeta.kushwaha@ipc.ph added CreateNew url
  * @description: This class gets the url of iframe
+ * changes for the test
  */
-public without sharing class AccountStatement{
+public without sharing class AccountStatement{  
 
     public String IFRAMEENDPOINT {get; private set;}
     
