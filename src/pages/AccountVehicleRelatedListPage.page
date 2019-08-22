@@ -1,0 +1,212 @@
+<apex:page standardController="Account"  extensions="AccountVehicleRelatedListCtrl">
+
+    <!-- Incorporate the Salesforce Lightning Design System stylesheet -->
+    <apex:stylesheet value="{!URLFOR($Resource.SLDS222, 'salesforce-lightning-design-system/assets/styles/salesforce-lightning-design-system-vf.min.css')}" />      
+    <apex:stylesheet value="{!URLFOR($Resource.DataTables, 'DataTables/media/css/jquery.dataTables.css')}" />
+    <apex:stylesheet value="{!URLFOR($Resource.DataTables, 'DataTables/custom.css')}" />    
+    <apex:stylesheet value="{!URLFOR($Resource.DataTables, 'DataTables/media/css/buttons.dataTables.min.css')}" />
+
+
+    <!-- Inlcude DataTables -->
+    <apex:includeScript value="{!URLFOR($Resource.DataTables, 'DataTables/media/js/jquery.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.DataTables, 'DataTables/media/js/jquery.dataTables.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.DataTables, 'DataTables/media/js/dataTables.buttons.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.DataTables, 'DataTables/media/js/buttons.flash.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.DataTables, 'DataTables/media/js/jszip.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.DataTables, 'DataTables/media/js/pdfmake.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.DataTables, 'DataTables/media/js/vfs_fonts.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.DataTables, 'DataTables/media/js/buttons.html5.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.DataTables, 'DataTables/media/js/buttons.print.min.js')}" />
+    
+    <script src="/soap/ajax/40.0/connection.js" type="text/javascript"></script>
+    <script src="/soap/ajax/40.0/apex.js" type="text/javascript"></script>
+   
+    
+     <div id="loading" >
+            <img src="/img/loading.gif" />
+             &nbsp;Loading table...
+     </div>
+    <!-- Wrap the page in the custom CSS namespace - datatables -->
+    <div class="datatables">
+
+         
+            <div class="slds-grid slds-wrap">
+
+                <div class="slds-col--padded slds-size--1-of-2 ">
+                    <div id="table-wrapper">
+                        <table class="slds-table slds-table--bordered  display" id="datatable" cellspacing="0" width="50%">
+                            
+                            <thead>
+                                <tr class="slds-text-title--caps">
+                                
+                                    <th scope="col">
+                                         <div class="slds-truncate" title="Ownership Start">Ownership Start</div>
+                                    </th>
+                                     <th scope="col">
+                                         <div class="slds-truncate" title="Plate">Plate</div>
+                                    </th>
+                                     <th scope="col">
+                                         <div class="slds-truncate" title="Year">Year</div>
+                                    </th>       
+                                     <th scope="col">
+                                         <div class="slds-truncate" title="Model">Model</div>
+                                    </th>                                         
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="Make">Make </div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="VIN">VIN</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="Ownership Name">Ownership Name</div>
+                                    </th>                                    
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="Status">Status</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="Retail Date">Retail Date</div>
+                                    </th>  
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="First Owner">First Owner</div>
+                                    </th>    
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="Value Segment">Value Segment</div>
+                                    </th>    
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="Selling Dealer">Selling Dealer</div>
+                                    </th>                                        
+                                </tr>
+                            </thead>
+
+                             <tfoot>
+                                <tr>
+                                    <th>Ownership Start</th>
+                                    <th>Plate</th>
+                                    <th>Year</th>
+                                    <th>Model</th>
+                                    <th>Make</th>
+                                    <th>VIN</th>
+                                    <th>Ownership Name</th>
+                                    <th>Status</th>
+                                    <th>Retail Date</th>
+                                    <th>First Owner</th>
+                                    <th>Value Segment</th>
+                                    <th>Selling Dealer</th>                                    
+                                </tr>
+                            </tfoot>                           
+ 
+                            <tbody></tbody>                           
+                        </table>
+                    </div>
+
+                </div>
+
+            </div>
+
+    </div>
+
+
+
+
+    <script>
+        $(document).ready(function() {
+             setTimeout(initDatatable(), 2000);
+        });
+        
+        function initDatatable() {
+
+                $('#table-wrapper').hide();
+    
+                $('#datatable tfoot th').each( function () {
+                     var title = $(this).text();
+                     $(this).html( '<input type="text"  placeholder="Search " />' );
+                } ); 
+            
+                var finalrecords = [];
+                var recordToFilter;
+                sforce.connection.sessionId = '{!GETSESSIONID()}';
+                finalrecords = sforce.apex.execute("AccountVehicleRelatedListCtrl","getMembersAjax",
+                             {accId:"{!$CurrentPage.parameters.Id}"});
+             
+                var recordsToProcess=[];
+                for (var i = 0; i < finalrecords.length; i++) {
+
+                            var record = [];
+                            var idvar= getFieldValue(finalrecords[i], 'Id');
+                            var urlstring='/'+ idvar;
+                            var memberName = getFieldValue(finalrecords[i], 'Name'); 
+                    
+                            var vehicleId= getFieldValue(finalrecords[i], 'Vehicle__c');
+                            var platevar= getFieldValue(finalrecords[i], 'Vehicle_Plate_Text__c');
+                            var vinvar= getFieldValue(finalrecords[i], 'VIN_Text__c');
+                            var vurlstring= '/'+ vehicleId;
+
+                    
+                            var dealerId= getFieldValue(finalrecords[i], 'Dealer__c');
+                            var durlstring='/'+ dealerId;
+                            var dealerCode = getFieldValue(finalrecords[i], 'Selling_Dealer_Code__c');                     
+                    
+                            record.push(getFieldValue(finalrecords[i], 'Ownership_Start__c'));
+                            record.push('<a href='+vurlstring+'>'+platevar +'</a>');                        
+                            record.push(getFieldValue(finalrecords[i], 'Vehicle_Year__c'));
+                            record.push(getFieldValue(finalrecords[i], 'Vehicle_Model__c'));
+                            record.push(getFieldValue(finalrecords[i], 'Make_Text__c'));
+                            record.push('<a href='+vurlstring+'>'+vinvar +'</a>');    
+                            record.push('<a href='+urlstring+'>'+memberName +'</a>');                    
+                            record.push(getFieldValue(finalrecords[i], 'Ownership_Status__c'));
+                            record.push(getFieldValue(finalrecords[i], 'WEC_Retail_Date__c'));       
+                            record.push(getFieldValue(finalrecords[i], 'First_Owner__c'));  
+                            record.push(getFieldValue(finalrecords[i], 'Value_Segment__c'));  
+                            record.push('<a href='+durlstring+'>'+dealerCode +'</a>');                        
+                            recordsToProcess.push(record);
+                            console.log(record);
+                 }
+            
+                   // Launch the datatable
+                var table = $('#datatable').DataTable({
+                    data: recordsToProcess,
+                    deferRender: true,
+                    iDisplayLength: 10,
+                    dom: 'Bfrtip',
+                    buttons: [
+                        'copy', 'csv', 'excel', 'pdf', 'print'
+                    ]                       
+                    
+                });                      
+                
+                //Adding search functionality on each column
+                table.columns().every( function () {
+                    var that = this;
+                    
+                    $( 'input', this.footer() ).on( 'keyup change', function () {
+                        if ( that.search() !== this.value ) {
+                            that
+                            .search( this.value )
+                            .draw();
+                        }
+                    } );
+                } );
+                
+                // Show the table
+                $('#loading').hide();
+                $('#table-wrapper').show();
+         
+        }
+    
+        // Get field value or null if not found
+        function getFieldValue(object, fieldName) {
+
+            if ( object !=null && fieldName in object) {
+                
+                return object[fieldName];
+            }
+            else {
+                return '';
+            }
+        }       
+
+
+    
+    </script>
+    
+</apex:page>

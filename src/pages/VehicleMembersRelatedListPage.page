@@ -1,0 +1,471 @@
+<apex:page standardController="Campaign" readOnly="true"  extensions="VehicleMembersRelatedListCtrl">
+  
+    <!-- Incorporate the Salesforce Lightning Design System stylesheet -->
+    <apex:stylesheet value="{!URLFOR($Resource.SLDS222, 'salesforce-lightning-design-system/assets/styles/salesforce-lightning-design-system-vf.min.css')}" />      
+    <apex:stylesheet value="{!URLFOR($Resource.DataTables, 'DataTables/media/css/jquery.dataTables.css')}" />
+    <apex:stylesheet value="{!URLFOR($Resource.DataTables, 'DataTables/custom.css')}" />    
+    <apex:stylesheet value="{!URLFOR($Resource.DataTables, 'DataTables/media/css/buttons.dataTables.min.css')}" />
+
+
+    <!-- Inlcude DataTables -->
+    <apex:includeScript value="{!URLFOR($Resource.DataTables, 'DataTables/media/js/jquery.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.DataTables, 'DataTables/media/js/jquery.dataTables.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.DataTables, 'DataTables/media/js/dataTables.buttons.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.DataTables, 'DataTables/media/js/buttons.flash.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.DataTables, 'DataTables/media/js/jszip.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.DataTables, 'DataTables/media/js/pdfmake.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.DataTables, 'DataTables/media/js/vfs_fonts.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.DataTables, 'DataTables/media/js/buttons.html5.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.DataTables, 'DataTables/media/js/buttons.print.min.js')}" />
+   
+    <script src="/soap/ajax/40.0/connection.js" type="text/javascript"></script>
+    <script src="/soap/ajax/40.0/apex.js" type="text/javascript"></script>
+    
+    
+    <body>
+      
+        
+     <div id="idLoading">
+            <img src="/img/loading32.gif" width="30" height="25" />
+            <apex:outputLabel value="Loading..."/>
+     </div>  
+   
+     
+   
+    <!-- Wrap the page in the custom CSS namespace - datatables -->
+    <div class="datatables">
+         
+            <div class="slds-grid slds-wrap">
+
+                <div class="slds-col--padded slds-size--1-of-2 ">
+                    <div id="table-wrapper">
+                        <table class="slds-table slds-table--bordered  display" id="datatable" cellspacing="0" width="50%">
+                            
+                            <thead>
+                                <tr class="slds-text-title--caps">
+                                
+                                    <th scope="col">
+                                         <div class="slds-truncate" title="Member Record">Member</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="WEC Status">WEC Status </div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="Customer Status">CRM Status </div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="Customer Status">Comms Status </div>
+                                    </th> 
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="Customer Status">Latest Comms Status </div>
+                                    </th> 
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="PMA Dealer">Dealer </div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="Plate">Plate</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="VIN">VIN</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="Person">Person</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="Make">Make</div>
+                                    </th>                                    
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="Suppression Codes">Suppression Codes</div>
+                                    </th>             
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="Plate Batch">Plate Batch</div>
+                                    </th>                                     
+                                </tr>
+                            </thead>
+
+                             <tfoot>
+                                <tr>
+                                    <th>Member Record</th>
+                                    <th>WEC Status</th>
+                                    <th>CRM Status</th>
+                                    <th>Comms Status</th>
+                                    <th>Latest Comms Status</th>
+                                    <th>PMA Dealer</th>
+                                    <th>Plate</th>
+                                    <th>VIN</th>                                    
+                                    <th>Person</th>
+                                    <th>Make</th>
+                                    <th>Suppression Codes</th>
+                                    <th>Plate Batch</th>
+                                </tr>
+                            </tfoot>                           
+ 
+                            <tbody></tbody>                           
+                        </table>
+                    </div>
+
+                </div>
+
+            </div>
+
+    </div>
+
+  </body>
+
+
+    <script>
+        $(document).ready(function() {            
+          setTimeout(setupPage(), 2000);
+         
+        });
+         
+       
+         function setupPage() {
+               
+              
+               $('#datatable tfoot th').each( function () {
+                     var title = $(this).text();
+                     $(this).html( '<input type="text"  placeholder="Search " />' );
+                } ); 
+              
+             
+                var finalrecords = [];
+                var recordToFilter;
+             
+              sforce.connection.sessionId = '{!GETSESSIONID()}';
+              finalrecords = sforce.apex.execute("VehicleMembersRelatedListCtrl","getMembersAjax",
+                             {campId:"{!$CurrentPage.parameters.Id}"});
+       
+           
+               var recordsToProcess=[];
+               for (var i = 0; i < finalrecords.length; i++) {
+          
+                            var record =[];
+                            var idvar= getFieldValue(finalrecords[i], 'Id');
+                            var urlstring='/lightning/r/Vehicle_Campaign_Member__c/'+ idvar + '/view';
+                           
+                            var memberName = getFieldValue(finalrecords[i], 'Name'); 
+
+                            var vehId= getFieldValue(finalrecords[i], 'Vehicle__c');
+                            var vehurlstring='/lightning/r/Vehicle__c/'+ vehId + '/view';
+                            var plateName = getFieldValue(finalrecords[i], 'Plate_Text__c'); 
+                            var vinName = getFieldValue(finalrecords[i], 'VIN_Text__c'); 
+                              
+                            var personId= getFieldValue(finalrecords[i], 'Person__c');
+                            var personurlstring='/lightning/r/Contact/'+ personId + '/view';
+                            var personName = getFieldValue(finalrecords[i], 'Member_Name__c'); 
+                            
+                            if(finalrecords[i].hasOwnProperty('Plate_Batch__c')) {
+                                    var batchId= getFieldValue(finalrecords[i], 'Plate_Batch__c');
+                                    var batchurlstring='/lightning/r/Plate_Queue_Batch__c/'+ batchId + '/view';
+                                    var batchName = getFieldValue(finalrecords[i].Plate_Batch__r, 'Name'); 
+                             } else {
+                                    var batchurlstring=' ';
+                                    var batchName = '-- None -- ';
+                                 }
+
+                            record.push('<a href='+urlstring+'>'+memberName +'</a>');
+                            record.push(getFieldValue(finalrecords[i], 'WEC_Vehicle_Status__c'));
+                            record.push(getFieldValue(finalrecords[i], 'Status__c'));
+                            record.push(getFieldValue(finalrecords[i], 'Communication_Status__c'));
+                            record.push(getFieldValue(finalrecords[i], 'Latest_Communication_Status__c'));
+                            record.push(getFieldValue(finalrecords[i], 'PMA_Dealer__c'));
+                            record.push('<a href='+vehurlstring+'>'+plateName +'</a>'); 
+                            record.push('<a href='+vehurlstring+'>'+vinName +'</a>'); 
+                            record.push('<a href='+personurlstring+'>'+personName +'</a>');  
+                            record.push(getFieldValue(finalrecords[i], 'Make__c'));
+                            record.push(getFieldValue(finalrecords[i], 'Suppression_Codes__c')); 
+                            record.push('<a href='+batchurlstring+'>'+batchName +'</a>');  
+                            recordsToProcess.push(record);
+                        } 
+             
+                   var table = $('#datatable').DataTable({
+                            data: recordsToProcess,
+                            deferRender: true,
+                            iDisplayLength: 15,
+                            dom: 'Bfrtip',
+                            buttons: [
+                                'copy', 'csv', 'excel', 'pdf', 'print',
+                                           {
+                                                text: 'Create Plate Batch',
+                                                className: 'green',
+                                                action: function ( e, dt, node, config ) {
+                                                        var rcds = dt.rows( { filter : 'applied'  } ).data();
+                                                        $(rcds).addClass('selected');
+                                                        createPBatch(rcds, dt);
+                                                }
+                                            },
+                                            {
+                                                text: 'Recall Mailout',
+                                                className: 'green',
+                                                action: function ( e, dt, node, config ) {
+                                                        var rcds = dt.rows( { filter : 'applied'  } ).data();
+                                                        var letterNumber = prompt("Please enter the Letter Number:", "");
+                                                        if (letterNumber !== null && letterNumber !== "") {
+                                                            createMailout(rcds, dt, letterNumber);
+                                                        }
+                                                        
+                                                }
+                                            }
+                            ]                       
+
+                        });    
+                        
+                         //Adding search functionality on each column
+                        table.columns().every( function () {
+                        var that = this;
+                 
+                        $( 'input', this.footer() ).on( 'keyup change', function () {
+                            if ( that.search() !== this.value ) {
+                                that
+                                    .search( this.value )
+                                    .draw();
+                            }
+                        } );
+                         } );                       
+                        
+                        
+                         $('#idLoading').hide();
+                        $('#table-wrapper').show();
+         }
+
+   
+        // Get field value or null if not found
+        function getFieldValue(object, fieldName) {
+            
+            if (object !=null && fieldName in object) {
+                
+                return object[fieldName];
+            }
+            else {
+                return '';
+            }
+        }
+    
+        function createMailout(rcds, dt, letterNumber) {
+           
+            if (rcds.length>7000){
+                alert('Please filter records! Maximum 7000 can be processed..');
+                return false;
+            } 
+            var curtable = $('#datatable').DataTable();
+            var datatable = new Array();
+            for (var i = 0; i < rcds.length; ++i) {  
+                var startOfValue = rcds[i][0].indexOf('/Vehicle_Campaign_Member__c/')+28;
+                var endOffValue  = rcds[i][0].indexOf('/view');
+                datatable[i] = rcds[i][0].substring(startOfValue,endOffValue);        
+            }
+                Visualforce.remoting.Manager.invokeAction(
+                    '{!$RemoteAction.VehicleMembersRelatedListCtrl.generateMailoutBatch}',
+                    "{!$CurrentPage.parameters.Id}",datatable, letterNumber,
+                    function(result, event){
+                        if (event.status) {
+                               alert('Records has been processed and you will get confirmation once files get generated.');
+                                           
+                        } else if (event.type === 'exception') {
+                            document.getElementById("responseErrors").innerHTML =
+                                event.message + "<br/>\n<pre>" + event.where + "</pre>";
+                        } else {
+                            document.getElementById("responseErrors").innerHTML = event.message;
+                        }
+                    },
+                    {escape: true}
+                );
+            
+
+        }    
+    /*
+        // Commented By Himanshu- CRM-6372
+        function createMailout(rcds, dt, letterNumber) {
+            
+            if (rcds.length>5000){
+                alert('Please filter records! Maximum 5000 can be processed.');
+                return false;
+            } 
+            var curtable = $('#datatable').DataTable();
+            var datatable = new Array();
+            for (var i = 0; i < rcds.length; ++i) {  
+                var startOfValue = rcds[i][0].indexOf('/sObject/')+9;
+                var endOffValue  = rcds[i][0].indexOf('/view');
+                datatable[i] = rcds[i][0].substring(startOfValue,endOffValue);        
+            }
+                Visualforce.remoting.Manager.invokeAction(
+                    '{!$RemoteAction.VehicleMembersRelatedListCtrl.generateMailout}',
+                    "{!$CurrentPage.parameters.Id}",datatable, letterNumber,
+                    function(result, event){
+                        if (event.status) {
+
+                        var records = [];
+                        var recordsTobeRemoved =[];
+                        // Iterate over the results to build the dataset
+                        for (var i = 0; i < result.length; i++) {
+
+                            var record = [];
+                            var idvar= getFieldValue(result[i], 'Id');
+                            var urlstring='/lightning/r/Vehicle_Campaign_Member__c/'+ idvar + '/view';
+                            var memberName = getFieldValue(result[i], 'Name'); 
+
+                            var vehId= getFieldValue(result[i], 'Vehicle__c');
+                            var vehurlstring='/lightning/r/Vehicle__c/'+ vehId + '/view';
+                            var plateName = getFieldValue(result[i], 'Plate_Text__c'); 
+                            var vinName = getFieldValue(result[i], 'VIN_Text__c'); 
+                            
+                            var personId= getFieldValue(result[i], 'Person__c');
+                            var personurlstring='/lightning/r/Contact/'+ personId + '/view';
+                            var personName = getFieldValue(result[i], 'Member_Name__c'); 
+                                                 
+                            if(result[i].hasOwnProperty('Plate_Batch__c')) {
+                                    var batchId= getFieldValue(result[i], 'Plate_Batch__c');
+                                    var batchurlstring='/lightning/r/Plate_Queue_Batch__c/'+ batchId + '/view';
+                                    var batchName = getFieldValue(result[i].Plate_Batch__r, 'Name'); 
+                             } else {
+                                    var batchurlstring=' ';
+                                    var batchName = '-- None -- ';
+                                 }
+                            
+                            record.push('<a href='+urlstring+'>'+memberName +'</a>');
+                            record.push(getFieldValue(result[i], 'WEC_Vehicle_Status__c'));
+                            record.push(getFieldValue(result[i], 'Status__c'));
+                            record.push(getFieldValue(result[i], 'Communication_Status__c'));
+                            record.push(getFieldValue(result[i], 'PMA_Dealer__c'));
+                            record.push('<a href='+vehurlstring+'>'+plateName +'</a>'); 
+                            record.push('<a href='+vehurlstring+'>'+vinName +'</a>'); 
+                            record.push('<a href='+personurlstring+'>'+personName +'</a>'); 
+                            record.push(getFieldValue(result[i], 'Make__c'));
+                            record.push(getFieldValue(result[i], 'Suppression_Codes__c'));  
+                            record.push('<a href='+batchurlstring+'>'+batchName +'</a>');  
+                            records.push(record);
+                            recordsTobeRemoved.push(memberName);
+
+                        }          
+                            
+                        var allRecords =curtable.rows().data();  
+                        for(var k=0;k<allRecords.length;k++){
+                            var str1 = document.createElement('str1');
+                            str1.innerHTML = allRecords[k][0];
+                    
+                            if((recordsTobeRemoved.indexOf(str1.textContent)==-1))
+                                  {
+                                       records.push(allRecords[k]);
+                                  }
+                        }    
+                       
+                        curtable.clear();
+                        curtable.rows.add(records);
+                        curtable.draw();
+                                                
+                        } else if (event.type === 'exception') {
+                            document.getElementById("responseErrors").innerHTML =
+                                event.message + "<br/>\n<pre>" + event.where + "</pre>";
+                        } else {
+                            document.getElementById("responseErrors").innerHTML = event.message;
+                        }
+                    },
+                    {escape: true}
+                );
+            
+
+        }    
+    */
+        // create a plate batch for selected records
+        function createPBatch(rcds, dt) {
+            
+            if (rcds.length>5000){
+                alert('Please filter records! Maximum 5000 can be processed.');
+                return false;
+            } 
+         
+            var curtable = $('#datatable').DataTable();
+            var datatable = new Array();
+            for (var i = 0; i < rcds.length; ++i) {
+                var startOfValue = rcds[i][0].indexOf('/Vehicle_Campaign_Member__c/')+28;
+                var endOffValue  = rcds[i][0].indexOf('/view');
+                datatable[i] = rcds[i][0].substring(startOfValue,endOffValue);        
+            }
+            
+         
+                Visualforce.remoting.Manager.invokeAction(
+                    '{!$RemoteAction.VehicleMembersRelatedListCtrl.createBatch}',
+                    "{!$CurrentPage.parameters.Id}",datatable,
+                    function(result, event){
+                        if (event.status) {
+
+                        var records = [];
+                        var recordsTobeRemoved =[];
+                        // Iterate over the results to build the dataset
+                        for (var i = 0; i < result.length; i++) {
+
+                            var record = [];
+                            var idvar= getFieldValue(result[i], 'Id');
+                            var urlstring='/lightning/r/Vehicle_Campaign_Member__c/'+ idvar + '/view';
+                            var memberName = getFieldValue(result[i], 'Name'); 
+
+                            var vehId= getFieldValue(result[i], 'Vehicle__c');
+                            var vehurlstring='/lightning/r/Vehicle__c/'+ vehId + '/view';
+                            var plateName = getFieldValue(result[i], 'Plate_Text__c'); 
+                            var vinName = getFieldValue(result[i], 'VIN_Text__c'); 
+                            
+                            var personId= getFieldValue(result[i], 'Person__c');
+                            var personurlstring='/lightning/r/Contact/'+ personId + '/view';
+                            var personName = getFieldValue(result[i], 'Member_Name__c'); 
+                            
+                            if(result[i].hasOwnProperty('Plate_Batch__c')) {
+                                    var batchId= getFieldValue(result[i], 'Plate_Batch__c');
+                                    var batchurlstring='/lightning/r/Plate_Queue_Batch__c/'+ batchId + '/view';
+                                    var batchName = getFieldValue(result[i].Plate_Batch__r, 'Name'); 
+                             } else {
+                                    var batchurlstring=' ';
+                                    var batchName = '-- None -- ';
+                                 }
+                            
+                            record.push('<a href='+urlstring+'>'+memberName +'</a>');
+                            record.push(getFieldValue(result[i], 'WEC_Vehicle_Status__c'));
+                            record.push(getFieldValue(result[i], 'Status__c'));
+                            record.push(getFieldValue(result[i], 'Communication_Status__c'));
+                            record.push(getFieldValue(result[i], 'Latest_Communication_Status__c'));
+                            record.push(getFieldValue(result[i], 'PMA_Dealer__c'));
+                            record.push('<a href='+vehurlstring+'>'+plateName +'</a>'); 
+                            record.push('<a href='+vehurlstring+'>'+vinName +'</a>'); 
+                            record.push('<a href='+personurlstring+'>'+personName +'</a>'); 
+                            record.push(getFieldValue(result[i], 'Make__c'));
+                            record.push(getFieldValue(result[i], 'Suppression_Codes__c'));  
+                            record.push('<a href='+batchurlstring+'>'+batchName +'</a>');  
+                            records.push(record);
+                            recordsTobeRemoved.push(memberName);
+                        } 
+                            
+                       
+                        var allRecords =curtable.rows().data();    
+                      
+                        for(var k=0;k<allRecords.length;k++){
+                            var str1 = document.createElement('str1');
+                            str1.innerHTML = allRecords[k][0];
+                    
+                            if((recordsTobeRemoved.indexOf(str1.textContent)==-1))
+                                  {
+                                       records.push(allRecords[k]);
+                                  }
+                        }    
+                       
+                        curtable.clear();
+                        curtable.rows.add(records);
+                        curtable.draw();
+                            
+                        } else if (event.type === 'exception') {
+                            document.getElementById("responseErrors").innerHTML =
+                                event.message + "<br/>\n<pre>" + event.where + "</pre>";
+                        } else {
+                            document.getElementById("responseErrors").innerHTML = event.message;
+                        }
+                    },
+                    {escape: true}
+                );
+            
+
+        } 
+    
+    </script>
+    
+    
+
+</apex:page>

@@ -1,0 +1,215 @@
+<apex:page standardController="Plate_Queue_Batch__c"  extensions="PlateBatchMCRecordsRelatedCtrl">
+
+    <!-- Incorporate the Salesforce Lightning Design System stylesheet -->
+    <apex:stylesheet value="{!URLFOR($Resource.SLDS222, 'salesforce-lightning-design-system/assets/styles/salesforce-lightning-design-system-vf.min.css')}" />      
+    <apex:stylesheet value="{!URLFOR($Resource.DataTables, 'DataTables/media/css/jquery.dataTables.css')}" />
+    <apex:stylesheet value="{!URLFOR($Resource.DataTables, 'DataTables/custom.css')}" />    
+    <apex:stylesheet value="{!URLFOR($Resource.DataTables, 'DataTables/media/css/buttons.dataTables.min.css')}" />
+
+
+    <!-- Inlcude DataTables -->
+    <apex:includeScript value="{!URLFOR($Resource.DataTables, 'DataTables/media/js/jquery.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.DataTables, 'DataTables/media/js/jquery.dataTables.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.DataTables, 'DataTables/media/js/dataTables.buttons.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.DataTables, 'DataTables/media/js/buttons.flash.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.DataTables, 'DataTables/media/js/jszip.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.DataTables, 'DataTables/media/js/pdfmake.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.DataTables, 'DataTables/media/js/vfs_fonts.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.DataTables, 'DataTables/media/js/buttons.html5.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.DataTables, 'DataTables/media/js/buttons.print.min.js')}" />
+    
+    <script src="/soap/ajax/40.0/connection.js" type="text/javascript"></script>
+    <script src="/soap/ajax/40.0/apex.js" type="text/javascript"></script>
+   
+    
+     <div id="loading" >
+            <img src="/img/loading.gif" />
+             &nbsp;Loading table...
+     </div>
+    <!-- Wrap the page in the custom CSS namespace - datatables -->
+    <div class="datatables">
+
+         
+            <div class="slds-grid slds-wrap">
+
+                <div class="slds-col--padded slds-size--1-of-2 ">
+                    <div id="table-wrapper">
+                        <table class="slds-table slds-table--bordered  display" id="datatable" cellspacing="0" width="50%">
+                            
+                            <thead>
+                                <tr class="slds-text-title--caps">
+                                
+                                    <th scope="col">
+                                         <div class="slds-truncate" title="Record">Record</div>
+                                    </th>
+                                     <th scope="col">
+                                         <div class="slds-truncate" title="Classification">Classification</div>
+                                    </th>
+                                     <th scope="col">
+                                         <div class="slds-truncate" title="Account Cleaned">Account Cleaned</div>
+                                    </th>       
+                                     <th scope="col">
+                                         <div class="slds-truncate" title="Vehicle Cleaned">Vehicle Cleaned</div>
+                                    </th>                                         
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="VIN">VIN </div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="Plate">Plate</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="Make">Make</div>
+                                    </th>                                    
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="Registered Person Name">Registered Person Name</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="Last Validation">Last Validation</div>
+                                    </th>                                
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="Last Validation">Group</div>
+                                    </th>                                
+                                </tr>
+                            </thead>
+
+                             <tfoot>
+                                <tr>
+                                    <th>Record</th>
+                                    <th>Classification</th>
+                                    <th>Account Cleaned</th>
+                                    <th>Vehicle Cleaned</th>
+                                    <th>VIN</th>
+                                    <th>Plate</th>
+                                    <th>Make</th>
+                                    <th>Registered Person Name</th>
+                                    <th>Last Validation</th>
+                                    <th>Group</th>
+                                </tr>
+                            </tfoot>                           
+ 
+                            <tbody></tbody>                           
+                        </table>
+                    </div>
+
+                </div>
+
+            </div>
+
+    </div>
+
+
+
+
+    <script>
+        $(document).ready(function() {
+             setTimeout(initDatatable(), 2000);
+        });
+        
+        function initDatatable() {
+
+                $('#table-wrapper').hide();
+    
+                $('#datatable tfoot th').each( function () {
+                     var title = $(this).text();
+                     $(this).html( '<input type="text"  placeholder="Search " />' );
+                } ); 
+            
+                var finalrecords = [];
+                var recordToFilter;
+                sforce.connection.sessionId = '{!GETSESSIONID()}';
+                finalrecords = sforce.apex.execute("PlateBatchMCRecordsRelatedCtrl","getMembersAjax",
+                             {batch:"{!$CurrentPage.parameters.Id}"});
+             
+                var recordsToProcess=[];
+                for (var i = 0; i < finalrecords.length; i++) {      
+
+                            var record = [];
+                            var idvar= getFieldValue(finalrecords[i], 'Id');
+                            var urlstring='/'+ idvar;
+                            var memberName = getFieldValue(finalrecords[i], 'Name'); 
+                            
+                            if(finalrecords[i].hasOwnProperty('Last_Validation_date__c')) {
+                                var valdate = getUTCTime(getFieldValue(finalrecords[i], 'Last_Validation_date__c'));
+                             } else {
+                                 var valdate = '';
+                                 }
+                            
+                            record.push('<a href="'+urlstring+'">'+memberName +'</a>');
+                            record.push(getFieldValue(finalrecords[i], 'Error_Message_Severity__c'));
+                            record.push(getFieldValue(finalrecords[i], 'Cleaned__c'));   
+                            record.push(getFieldValue(finalrecords[i], 'Vehicle_Cleaned__c'));
+                            record.push(getFieldValue(finalrecords[i], 'VIN__c'));
+                            record.push(getFieldValue(finalrecords[i], 'Plate_No__c'));
+                            record.push(getFieldValue(finalrecords[i], 'Make__c'));
+                            record.push(getFieldValue(finalrecords[i], 'Registered_Person_Name__c'));
+                            record.push(valdate);
+                            record.push(getFieldValue(finalrecords[i], 'Group__c'));
+                            recordsToProcess.push(record);
+                 }
+            
+                   // Launch the datatable
+                var table = $('#datatable').DataTable({
+                    data: recordsToProcess,
+                    deferRender: true,
+                    iDisplayLength: 15,
+                    dom: 'Bfrtip',
+                    buttons: [
+                        'copy', 'csv', 'excel', 'pdf', 'print'
+                    ]                       
+                    
+                });                      
+                
+                //Adding search functionality on each column
+                table.columns().every( function () {
+                    var that = this;
+                    
+                    $( 'input', this.footer() ).on( 'keyup change', function () {
+                        if ( that.search() !== this.value ) {
+                            that
+                            .search( this.value )
+                            .draw();
+                        }
+                    } );
+                } );
+                
+                // Show the table
+                $('#loading').hide();
+                $('#table-wrapper').show();
+         
+        }
+    
+        // Get field value or null if not found
+        function getFieldValue(object, fieldName) {
+
+            if ( object !=null && fieldName in object) {
+                
+                return object[fieldName];
+            }
+            else {
+                return '';
+            }
+        }
+            
+        //  convert date format
+        function getUTCTime(d){
+            utcTime = new Date(d)
+            var dd = utcTime.getDate(); 
+            var mm = utcTime.getMonth()+1;
+            var yyyy = utcTime.getFullYear(); 
+            var hh = utcTime.getHours(); 
+            var min = utcTime.getMinutes(); 
+            var ss = utcTime.getSeconds(); 
+            if(dd<10){dd='0'+dd} 
+            if(mm<10){mm='0'+mm};
+            if(min<10){min='0'+min} 
+            if(ss<10){ss='0'+ss};           
+            return dd + "-" + mm + "-" + yyyy + " " + hh + ":" + min + ":" + ss;
+        }            
+
+
+    
+    </script>
+    
+    
+
+</apex:page>

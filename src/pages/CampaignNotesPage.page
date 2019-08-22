@@ -1,0 +1,19 @@
+<apex:page standardController="Campaign">
+
+    
+<apex:form >
+    
+    			<apex:outputText style="font-size: 14px" value="Service Ops."/>
+    			<apex:inputField label="Service Ops" value="{!campaign.Service_Ops_Notes__c }" /><br></br>
+    			
+    			<apex:outputText style="font-size: 14px" value="CRM Team."/>
+                <apex:inputField label="CRM Team" value="{!campaign.CRM_Notes__c }"/><br></br>
+    
+				<apex:outputText style="font-size: 14px" value="CDC Team."/>
+                <apex:inputField label="CDC Team" value="{!campaign.CDC_Notes__c }"/><br></br>
+
+				<apex:commandButton id="saveBtn" value="Save" action="{!save}" />
+
+    </apex:form>
+
+</apex:page>
